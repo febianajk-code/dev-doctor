@@ -1,12 +1,22 @@
 import asyncio
+import os
 import socket
 import time
 import urllib.error
 import urllib.request
+from typing import Literal
 
 from mistralai import agents
 
 MAX_BODY_SNIPPET = 512
+
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+DEFAULT_MODELS = {
+    "mistral": "mistral-medium-latest",
+    "openrouter": "mistralai/mistral-small-3.2-24b-instruct:free",
+}
+BACKEND = os.environ.get("DEV_DOCTOR_BACKEND", "mistral").strip().lower()
+MODEL = os.environ.get("DEV_DOCTOR_MODEL", DEFAULT_MODELS.get(BACKEND, DEFAULT_MODELS["mistral"]))
 
 INSTRUCTIONS = """\
 Kamu adalah dev-doctor, agen ahli untuk debugging, koding, website, dan jaringan.
@@ -102,13 +112,43 @@ async def dns_lookup(host: str) -> dict:
     return result
 
 
-agent = agents.Agent(
-    model="mistral-medium-latest",
+def _completion_config():
+    if BACKEND != "openrouter":
+        return None
+    from mistralai.vibe.harness.runtime.completion import CompletionConfigBase, CompletionProvider
+    from mistralai.vibe.harness.runtime.completion.providers.openai import OpenAICompletionProvider
+
+    class OpenRouterConfig(CompletionConfigBase):
+        type: Literal["openrouter_dev_doctor"] = "openrouter_dev_doctor"
+        model: str = MODEL
+        base_url: str = OPENROUTER_BASE_URL
+        api_key_env_var: str = "OPENROUTER_API_KEY"
+        context_window: int = 131_072
+        max_output_tokens: int = 8_192
+
+        def build_provider(self) -> CompletionProvider:
+            return OpenAICompletionProvider(
+                api_key=os.environ[self.api_key_env_var],
+                model=self.model,
+                base_url=self.base_url,
+            )
+
+    return OpenRouterConfig(model=MODEL)
+
+
+_agent_kwargs = dict(
+    model=MODEL,
     name="dev-doctor",
     instructions=INSTRUCTIONS,
     tools=[http_probe, dns_lookup],
-    environment=agents.MistralSandbox(network=agents.Network.all()),
 )
+
+if BACKEND == "openrouter":
+    _agent_kwargs["completion"] = _completion_config()
+else:
+    _agent_kwargs["environment"] = agents.MistralSandbox(network=agents.Network.all())
+
+agent = agents.Agent(**_agent_kwargs)
 
 
 async def main() -> None:

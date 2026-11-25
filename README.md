@@ -19,8 +19,15 @@ Mistral Agents SDK (`mistralai-agents`).
 
 ## Menjalankan
 
-1. Salin `.env.example` menjadi `.env` dan isi `MISTRAL_API_KEY`
-   (butuh role `cloud_user` untuk `MistralSandbox`).
+1. Salin `.env.example` menjadi `.env` dan pilih salah satu backend:
+
+   - **Mistral** (default): isi `MISTRAL_API_KEY`
+     (butuh role `cloud_user` untuk `MistralSandbox`).
+   - **OpenRouter** (mendukung model `:free`): isi `OPENROUTER_API_KEY`, lalu
+     set `DEV_DOCTOR_BACKEND=openrouter`.
+
+   Model lain bisa di-set lewat `DEV_DOCTOR_MODEL` (misal
+   `mistralai/mistral-small-3.2-24b-instruct:free`).
 2. Jalankan:
 
 ```bash
