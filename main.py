@@ -1,6 +1,8 @@
 import asyncio
 import os
+import shutil
 import socket
+import subprocess
 import time
 import urllib.error
 import urllib.request
@@ -16,7 +18,13 @@ DEFAULT_MODELS = {
     "openrouter": "mistralai/mistral-small-3.2-24b-instruct:free",
 }
 BACKEND = os.environ.get("DEV_DOCTOR_BACKEND", "mistral").strip().lower()
-MODEL = os.environ.get("DEV_DOCTOR_MODEL", DEFAULT_MODELS.get(BACKEND, DEFAULT_MODELS["mistral"]))
+_model_env = os.environ.get("DEV_DOCTOR_MODEL", "").strip()
+if not _model_env:
+    if BACKEND == "openrouter" and os.environ.get("DEV_DOCTOR_BASE_URL", "").strip():
+        _model_env = "cohere/command-a"
+    else:
+        _model_env = DEFAULT_MODELS.get(BACKEND, DEFAULT_MODELS["mistral"])
+MODEL = _model_env
 
 INSTRUCTIONS = """\
 Kamu adalah dev-doctor, agen ahli untuk debugging, koding, website, dan jaringan.
@@ -112,6 +120,18 @@ async def dns_lookup(host: str) -> dict:
     return result
 
 
+def _docker_available() -> bool:
+    docker = shutil.which("docker")
+    if not docker:
+        return False
+    try:
+        return subprocess.run(
+            [docker, "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10
+        ).returncode == 0
+    except Exception:
+        return False
+
+
 def _completion_config():
     if BACKEND != "openrouter":
         return None
@@ -145,6 +165,8 @@ _agent_kwargs = dict(
 
 if BACKEND == "openrouter":
     _agent_kwargs["completion"] = _completion_config()
+    if _docker_available():
+        _agent_kwargs["environment"] = agents.LocalDockerSandbox(network=agents.Network.all())
 else:
     _agent_kwargs["environment"] = agents.MistralSandbox(network=agents.Network.all())
 
