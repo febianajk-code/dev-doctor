@@ -103,7 +103,7 @@ async def dns_lookup(host: str) -> dict:
 
 
 agent = agents.Agent(
-    model="mistral-large-4",
+    model="mistral-medium-latest",
     name="dev-doctor",
     instructions=INSTRUCTIONS,
     tools=[http_probe, dns_lookup],

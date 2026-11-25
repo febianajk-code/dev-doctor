@@ -40,7 +40,7 @@ async def test_agent_runs_to_completion_without_api_key():
         [agents.testing.reply("OK.")]
     )
     offline_agent = agents.Agent(
-        model="mistral-large-4",
+        model="mistral-medium-latest",
         name="dev-doctor-offline",
         instructions=main.INSTRUCTIONS,
         tools=[main.http_probe, main.dns_lookup],
