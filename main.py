@@ -92,11 +92,11 @@ async def dns_lookup(host: str) -> dict:
     """
     result: dict = {"host": host}
     try:
-        result["ipv4"] = [address[4][0] for address in socket.getaddrinfo(host, None, family=socket.AF_INET)]
+        result["ipv4"] = sorted({address[4][0] for address in socket.getaddrinfo(host, None, family=socket.AF_INET)})
     except socket.gaierror as error:
         result["ipv4_error"] = str(error)
     try:
-        result["ipv6"] = [address[4][0] for address in socket.getaddrinfo(host, None, family=socket.AF_INET6)]
+        result["ipv6"] = sorted({address[4][0] for address in socket.getaddrinfo(host, None, family=socket.AF_INET6)})
     except socket.gaierror:
         pass
     return result
