@@ -10,7 +10,7 @@ from mistralai import agents
 
 MAX_BODY_SNIPPET = 512
 
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_BASE_URL = os.environ.get("DEV_DOCTOR_BASE_URL", "https://openrouter.ai/api/v1")
 DEFAULT_MODELS = {
     "mistral": "mistral-medium-latest",
     "openrouter": "mistralai/mistral-small-3.2-24b-instruct:free",
